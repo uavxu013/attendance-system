@@ -1,16 +1,14 @@
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, date
 import os
-import sys
 
 app = Flask(__name__)
 CORS(app)
 
 # Database configuration
-database_path = os.path.join(os.getcwd(), 'attendance.db')
-app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{database_path}'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///attendance.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -32,31 +30,6 @@ class Attendance(db.Model):
     status = db.Column(db.String(20), default='present')  # present, absent, late
     
     employee = db.relationship('Employee', backref='attendances')
-
-@app.route('/')
-def serve_frontend():
-    """Serve the React frontend"""
-    try:
-        return send_from_directory('static', 'index.html')
-    except Exception as e:
-        return jsonify({'error': 'Frontend not available', 'details': str(e)}), 404
-
-@app.route('/static/<path:filename>')
-def serve_static(filename):
-    """Serve static files"""
-    try:
-        return send_from_directory('static', filename)
-    except Exception as e:
-        return jsonify({'error': 'Static file not found', 'details': str(e)}), 404
-
-@app.route('/health')
-def health_check():
-    """Health check endpoint"""
-    return jsonify({
-        'status': 'healthy',
-        'timestamp': datetime.utcnow().isoformat(),
-        'database': 'connected' if db.engine.execute('SELECT 1').scalar() else 'disconnected'
-    })
 
 # Routes
 @app.route('/api/employees', methods=['GET', 'POST'])
