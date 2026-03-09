@@ -1,4 +1,4 @@
-# Alpine Linux compatible requirements
+# Requirements with SQLAlchemy 1.4.x (stable)
 Flask==2.3.3
 Flask-CORS==4.0.0
 SQLAlchemy==1.4.53
