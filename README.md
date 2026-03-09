@@ -94,7 +94,7 @@ Frontend จะรันที่ http://localhost:3000
 
 ### 1. ติดตั้ง dependencies เพิ่มเติม
 ```bash
-pip install pandas openpyxl
+pip install openpyxl
 ```
 
 ### 2. สร้างไฟล์ Excel ตาม template
@@ -123,6 +123,8 @@ python import_employees.py --show
 - `python import_employees.py --template` - สร้างไฟล์ตัวอย่าง
 - `python import_employees.py --show` - แสดงพนักงานที่มีอยู่ในฐานข้อมูล
 - `python import_employees.py <filename>` - import ข้อมูลจากไฟล์ Excel
+
+**หมายเหตุ**: ระบบใช้ openpyxl ในการอ่านไฟล์ Excel ซึ่งเบากว่า pandas และไม่ต้องการ dependencies ซับซ้อน
 
 ## ตัวอย่างการเพิ่มพนักงาน
 

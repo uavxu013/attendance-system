@@ -11,10 +11,9 @@ RUN npm run build
 # Backend stage with Alpine
 FROM python:3.11-alpine AS backend
 
-# Install system dependencies
+# Install system dependencies (minimal for openpyxl)
 RUN apk add --no-cache \
     gcc \
-    g++ \
     python3-dev \
     musl-dev \
     linux-headers \

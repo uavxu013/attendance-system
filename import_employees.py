@@ -3,58 +3,76 @@
 Script to import employee data from Excel file to database
 """
 
-import pandas as pd
+import openpyxl
 import sys
 import os
 from app import app, Employee, db
 
 def import_employees_from_excel(excel_file_path):
-    """Import employees from Excel file"""
+    """Import employees from Excel file using openpyxl only"""
     
     try:
-        # Read Excel file
-        df = pd.read_excel(excel_file_path)
+        # Read Excel file with openpyxl
+        workbook = openpyxl.load_workbook(excel_file_path)
+        sheet = workbook.active
         
-        # Expected columns: name, employee_id, department
-        required_columns = ['name', 'employee_id', 'department']
+        # Get header row
+        headers = []
+        for cell in sheet[1]:
+            headers.append(cell.value.lower() if cell.value else '')
         
         # Check if required columns exist
+        required_columns = ['name', 'employee_id', 'department']
         for col in required_columns:
-            if col not in df.columns:
+            if col not in headers:
                 print(f"❌ Error: Column '{col}' not found in Excel file")
                 print(f"Required columns: {required_columns}")
-                print(f"Found columns: {list(df.columns)}")
+                print(f"Found columns: {headers}")
                 return False
+        
+        # Get column indices
+        name_col = headers.index('name')
+        emp_id_col = headers.index('employee_id')
+        dept_col = headers.index('department')
         
         with app.app_context():
             imported_count = 0
             skipped_count = 0
             
-            for index, row in df.iterrows():
+            # Skip header row, start from row 2
+            for row_num in range(2, sheet.max_row + 1):
                 try:
+                    # Get cell values
+                    name = str(sheet.cell(row=row_num, column=name_col + 1).value or '').strip()
+                    emp_id = str(sheet.cell(row=row_num, column=emp_id_col + 1).value or '').strip()
+                    department = str(sheet.cell(row=row_num, column=dept_col + 1).value or '').strip()
+                    
+                    # Skip empty rows
+                    if not name or not emp_id:
+                        print(f"⚠️  Skipping empty row {row_num}")
+                        continue
+                    
                     # Check if employee already exists
-                    existing_employee = Employee.query.filter_by(
-                        employee_id=str(row['employee_id']).strip()
-                    ).first()
+                    existing_employee = Employee.query.filter_by(employee_id=emp_id).first()
                     
                     if existing_employee:
-                        print(f"⚠️  Skipping existing employee: {row['name']} ({row['employee_id']})")
+                        print(f"⚠️  Skipping existing employee: {name} ({emp_id})")
                         skipped_count += 1
                         continue
                     
                     # Create new employee
                     new_employee = Employee(
-                        name=str(row['name']).strip(),
-                        employee_id=str(row['employee_id']).strip(),
-                        department=str(row['department']).strip() if pd.notna(row['department']) else ''
+                        name=name,
+                        employee_id=emp_id,
+                        department=department
                     )
                     
                     db.session.add(new_employee)
                     imported_count += 1
-                    print(f"✅ Imported: {row['name']} ({row['employee_id']}) - {row['department']}")
+                    print(f"✅ Imported: {name} ({emp_id}) - {department}")
                     
                 except Exception as e:
-                    print(f"❌ Error importing row {index + 1}: {e}")
+                    print(f"❌ Error importing row {row_num}: {e}")
                     continue
             
             # Commit all changes
@@ -84,21 +102,42 @@ def show_current_employees():
             print(f"  - {emp.name} ({emp.employee_id}) - {emp.department}")
 
 def create_sample_excel():
-    """Create a sample Excel file template"""
-    sample_data = {
-        'name': ['สมชาย ใจดี', 'สมศรี รักดี', 'วิชัย มั่งคั่ง'],
-        'employee_id': ['EMP001', 'EMP002', 'EMP003'],
-        'department': ['IT', 'HR', 'Sales']
-    }
-    
-    df = pd.DataFrame(sample_data)
-    sample_file = 'Employee_List_Template.xlsx'
-    df.to_excel(sample_file, index=False)
-    print(f"✅ Sample template created: {sample_file}")
-    print("You can use this template to create your employee list")
+    """Create a sample Excel file template using openpyxl"""
+    try:
+        # Create workbook
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Employees"
+        
+        # Add headers
+        headers = ['name', 'employee_id', 'department']
+        for col_num, header in enumerate(headers, 1):
+            ws.cell(row=1, column=col_num, value=header)
+        
+        # Add sample data
+        sample_data = [
+            ['สมชาย ใจดี', 'EMP001', 'IT'],
+            ['สมศรี รักดี', 'EMP002', 'HR'],
+            ['วิชัย มั่งคั่ง', 'EMP003', 'Sales'],
+            ['มานี แสนสุข', 'EMP004', 'Marketing'],
+            ['ประสิทธิ์ โชคดี', 'EMP005', 'IT']
+        ]
+        
+        for row_num, data in enumerate(sample_data, 2):
+            for col_num, value in enumerate(data, 1):
+                ws.cell(row=row_num, column=col_num, value=value)
+        
+        # Save file
+        sample_file = 'Employee_List_Template.xlsx'
+        wb.save(sample_file)
+        print(f"✅ Sample template created: {sample_file}")
+        print("You can use this template to create your employee list")
+        
+    except Exception as e:
+        print(f"❌ Error creating sample file: {e}")
 
 if __name__ == "__main__":
-    print("🚀 Employee Import Tool")
+    print("🚀 Employee Import Tool (openpyxl version)")
     print("="*50)
     
     if len(sys.argv) < 2:
